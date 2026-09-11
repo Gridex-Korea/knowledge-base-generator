@@ -13,6 +13,8 @@ from datetime import date, datetime
 from pathlib import Path
 from typing import Any
 
+from .repositories import development_root
+
 
 HIGH_VALUE_SOURCE_CATEGORIES = [
     ("Government", "정부·부처의 법령, 정책, 기본계획, 공식 보도자료"),
@@ -118,7 +120,8 @@ def render_research_plan(project: dict[str, Any]) -> str:
 2. Draft / Consultation / Final / Effective / Superseded 상태를 구분합니다.
 3. 문서 제목, 발행기관, 발행일, 버전, 시행일, 관할범위, 원문 URL을 기록합니다.
 4. Google Search grounding으로 발견된 URL은 **Candidate Source**이며 자동으로 `Confirmed`가 되지 않습니다.
-5. 공식 원문 확인 후에만 `data/source-registry.yaml`로 승격합니다.
+5. 공식 원문 확인 후에만 공개 저장소 `data/source-registry.yaml`로 승격합니다.
+6. 원문은 비공개 `<공개 저장소명>-dev/sources/`에 보관하고 `data/source-archive.yaml`에 Source ID·버전·수집 시각·SHA-256을 기록합니다. 공개 사이트에는 원문 공식 URL 링크만 제공합니다.
 
 ## Seed target
 
@@ -132,7 +135,7 @@ def render_research_plan(project: dict[str, Any]) -> str:
 def write_research_plan(root: Path) -> Path:
     root = root.resolve()
     project = load_project(root)
-    path = root / "project" / "research-plan.md"
+    path = development_root(root) / "project" / "research-plan.md"
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(render_research_plan(project), encoding="utf-8")
     return path
@@ -256,7 +259,7 @@ Use Google Search and prioritize PRIMARY OFFICIAL SOURCES: government, regulator
             for idx, item in enumerate(sources, start=1)
         ],
     }
-    candidate_file = root / "data" / "source-candidates.json"
+    candidate_file = development_root(root) / "data" / "source-candidates.json"
     candidate_file.parent.mkdir(parents=True, exist_ok=True)
     candidate_file.write_text(json.dumps(candidate_payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
@@ -264,7 +267,7 @@ Use Google Search and prioritize PRIMARY OFFICIAL SOURCES: government, regulator
         f"| CAND-{idx:03d} | {item['title'].replace('|', '/')} | {item['domain']} | {item['uri']} | Unverified |"
         for idx, item in enumerate(sources, start=1)
     ) or "| - | No grounded web source returned | - | - | - |"
-    result_file = root / "project" / "research-results.md"
+    result_file = development_root(root) / "project" / "research-results.md"
     result_file.parent.mkdir(parents=True, exist_ok=True)
     result_file.write_text(
         f"""# Grounded Research Results — {topic}
@@ -297,7 +300,7 @@ Use Google Search and prioritize PRIMARY OFFICIAL SOURCES: government, regulator
         encoding="utf-8",
     )
     return {
-        "research_plan": str(root / "project" / "research-plan.md"),
+        "research_plan": str(development_root(root) / "project" / "research-plan.md"),
         "research_results": str(result_file),
         "source_candidates": str(candidate_file),
         "source_count": len(sources),
@@ -354,7 +357,7 @@ def audit_evidence(root: Path, output: Path | None = None) -> dict[str, Any]:
         if note_type not in {"hub", "glossary"} and not _frontmatter_value(block, "last_verified"):
             missing_verified.append(rel)
 
-    report_path = (output or root / "project" / "evidence-audit.md").resolve()
+    report_path = (output or development_root(root) / "project" / "evidence-audit.md").resolve()
     report_path.parent.mkdir(parents=True, exist_ok=True)
     evidence_rows = "\n".join(f"| {key} | {value} |" for key, value in sorted(evidence.items())) or "| - | 0 |"
     def bullets(items: list[str]) -> str:
@@ -414,10 +417,13 @@ def doctor(root: Path) -> dict[str, Any]:
     root = root.resolve()
     required = [
         "README.md", "HOME.md", "project.yaml", "content", "hubs", "templates",
-        "schemas", "taxonomy", "data/source-registry.yaml", "project/roadmap.md",
-        "project/evidence-gaps.md", "scripts/validate_kb.py",
+        "schemas", "taxonomy", "data/source-registry.yaml", "source-policy.md", "scripts/validate_kb.py",
     ]
     missing = [item for item in required if not (root / item).exists()]
+    dev = development_root(root)
+    missing.extend(f"{dev.name}/{item}" for item in (
+        "repository.json", "sources", "data/source-archive.yaml", "project/roadmap.md", "project/evidence-gaps.md"
+    ) if not (dev / item).exists())
     validator = root / "scripts" / "validate_kb.py"
     validation_code: int | None = None
     validation_output = ""
@@ -443,55 +449,77 @@ def doctor(root: Path) -> dict[str, Any]:
 def github_bootstrap_plan(root: Path, owner: str | None = None, private: bool | None = None) -> dict[str, Any]:
     root = root.resolve()
     project = load_project(root)
-    repo_name = root.name
-    visibility_private = bool(project.get("public") is False) if private is None else private
-    target = f"{owner or '<OWNER>'}/{repo_name}"
-    visibility = "--private" if visibility_private else "--public"
-    commands = [
-        "git init -b main  # only if this directory is not already a git repository",
-        "git add .",
-        'git commit -m "chore: initialize generated knowledge base"',
-        f"gh repo create {target} {visibility} --source=. --remote=origin --push",
-    ]
-    return {"target": target, "private": visibility_private, "commands": commands}
+    if private is True or project.get("public") is False:
+        raise RuntimeError("Every KB requires public <name> and private <name>-dev repositories; remove --private and migrate legacy project.yaml")
+    dev = development_root(root)
+    if not (dev / "repository.json").exists():
+        raise RuntimeError(f"required development scaffold missing: {dev}; generate the repository pair first")
+    repositories = []
+    commands = []
+    for directory, is_private in ((dev, True), (root, False)):
+        target = f"{owner or '<OWNER>'}/{directory.name}"
+        visibility = "--private" if is_private else "--public"
+        repo_commands = [
+            f"git -C \"{directory}\" init -b main  # only for a new checkout",
+            f"git -C \"{directory}\" add .",
+            f'git -C "{directory}" commit -m "chore: initialize generated knowledge base"',
+            f'gh repo create {target} {visibility} --source="{directory}" --remote=origin --push',
+        ]
+        repositories.append({"target": target, "private": is_private, "root": str(directory), "commands": repo_commands})
+        commands.extend(repo_commands)
+    return {"target": f"{owner or '<OWNER>'}/{root.name}", "private": False, "repositories": repositories, "commands": commands}
+
+
+def _existing_origin(directory: Path, target: str, private: bool) -> bool:
+    if not (directory / ".git").exists():
+        return False
+    remote = subprocess.run(["git", "remote", "get-url", "origin"], cwd=directory, capture_output=True, text=True)
+    if remote.returncode != 0 or not remote.stdout.strip():
+        return False
+    allowed = {f"https://github.com/{target}", f"https://github.com/{target}.git", f"git@github.com:{target}.git", f"ssh://git@github.com/{target}.git"}
+    push_remote = subprocess.run(["git", "remote", "get-url", "--push", "--all", "origin"], cwd=directory, capture_output=True, text=True, check=True)
+    if remote.stdout.strip() not in allowed or any(url not in allowed for url in push_remote.stdout.splitlines()):
+        raise RuntimeError(f"origin must point only to {target}: {directory}")
+    metadata = subprocess.run(["gh", "repo", "view", target, "--json", "nameWithOwner,isPrivate"], capture_output=True, text=True, check=True)
+    actual = json.loads(metadata.stdout)
+    if actual["nameWithOwner"].lower() != target.lower() or actual["isPrivate"] != private:
+        raise RuntimeError(f"repository name/visibility mismatch for {target}; expected {'private' if private else 'public'}")
+    return True
 
 
 def execute_github_bootstrap(root: Path, owner: str | None = None, private: bool | None = None) -> dict[str, Any]:
     root = root.resolve()
-    if not shutil.which("git"):
-        raise RuntimeError("git executable not found")
-    if not shutil.which("gh"):
-        raise RuntimeError("GitHub CLI (gh) not found")
+    if not shutil.which("git") or not shutil.which("gh"):
+        raise RuntimeError("git and GitHub CLI (gh) are required")
     if owner is None:
         proc = subprocess.run(["gh", "api", "user", "--jq", ".login"], cwd=root, capture_output=True, text=True)
         if proc.returncode != 0 or not proc.stdout.strip():
             raise RuntimeError("unable to infer GitHub owner; pass --owner")
         owner = proc.stdout.strip()
     plan = github_bootstrap_plan(root, owner=owner, private=private)
-    if not (root / ".git").exists():
-        subprocess.run(["git", "init", "-b", "main"], cwd=root, check=True)
-    subprocess.run(["git", "add", "."], cwd=root, check=True)
-    has_head = subprocess.run(["git", "rev-parse", "--verify", "HEAD"], cwd=root, capture_output=True).returncode == 0
-    staged = subprocess.run(["git", "diff", "--cached", "--quiet"], cwd=root).returncode != 0
-    if staged:
-        subprocess.run(
-            ["git", "-c", "user.name=Knowledge Base Generator", "-c", "user.email=kbgen@users.noreply.github.com",
-             "commit", "-m", "chore: initialize generated knowledge base"],
-            cwd=root,
-            check=True,
-        )
-    elif not has_head:
-        raise RuntimeError("no files available to create initial commit")
-    remote = subprocess.run(["git", "remote", "get-url", "origin"], cwd=root, capture_output=True, text=True)
-    if remote.returncode == 0 and remote.stdout.strip():
-        subprocess.run(["git", "push", "-u", "origin", "main"], cwd=root, check=True)
-        plan["result"] = f"pushed to existing origin: {remote.stdout.strip()}"
-        return plan
-    visibility = "--private" if plan["private"] else "--public"
-    subprocess.run(
-        ["gh", "repo", "create", plan["target"], visibility, "--source=.", "--remote=origin", "--push"],
-        cwd=root,
-        check=True,
-    )
-    plan["result"] = f"created and pushed {plan['target']}"
+    # Validate both destinations before staging or pushing either repository.
+    origins = [_existing_origin(Path(repo["root"]), repo["target"], repo["private"]) for repo in plan["repositories"]]
+    forbidden = ["sources", "project", "gcp", "data/source-archive.yaml", "data/source-candidates.json"]
+    if any((root / path).exists() for path in forbidden):
+        raise RuntimeError("move original sources and development records to the private -dev repository before publishing")
+    if (root / ".git").exists():
+        history = subprocess.run(["git", "log", "--all", "--format=%H", "--", *forbidden], cwd=root, capture_output=True, text=True, check=True)
+        if history.stdout.strip():
+            raise RuntimeError("development files exist in public Git history; use a clean public checkout before publishing")
+    for repo, has_origin in zip(plan["repositories"], origins):
+        directory = Path(repo["root"])
+        if not (directory / ".git").exists():
+            subprocess.run(["git", "init", "-b", "main"], cwd=directory, check=True)
+        subprocess.run(["git", "add", "."], cwd=directory, check=True)
+        has_head = subprocess.run(["git", "rev-parse", "--verify", "HEAD"], cwd=directory, capture_output=True).returncode == 0
+        staged = subprocess.run(["git", "diff", "--cached", "--quiet"], cwd=directory).returncode != 0
+        if staged:
+            subprocess.run(["git", "-c", "user.name=Knowledge Base Generator", "-c", "user.email=kbgen@users.noreply.github.com", "commit", "-m", "chore: initialize generated knowledge base"], cwd=directory, check=True)
+        elif not has_head:
+            raise RuntimeError(f"no files available to create initial commit: {directory}")
+        if has_origin:
+            subprocess.run(["git", "push", "-u", "origin", "main"], cwd=directory, check=True)
+        else:
+            subprocess.run(["gh", "repo", "create", repo["target"], "--private" if repo["private"] else "--public", "--source=.", "--remote=origin", "--push"], cwd=directory, check=True)
+    plan["result"] = "Created/pushed public and private development repositories"
     return plan

@@ -38,13 +38,20 @@ GCP의 DB/vector index는 모두 파생 계층이다. 삭제되어도 GitHub can
 
 ## 3. Repository model
 
-### Public KB
-사람과 AI 모두가 읽는 공개 지식, schema, site, 공개 가능한 automation을 둔다. 저장소는 그대로 Obsidian Vault로 열 수 있어야 한다.
+반드시 두 저장소를 사용한다. 이름·공개 범위는 선택 사항이 아니다.
 
-### Project management
-roadmap, backlog, research log, evidence gaps, QA/deployment record를 둔다.
+### Public KB — `<name>` (Public)
+사람과 AI 모두가 읽는 검증된 지식·요약, 출처 메타데이터, schema, site를 둔다.
+원문 제공은 공식 URL 링크로만 한다. 원문 파일·추출 전문·개발 저장소 보관 경로를 게시하지 않는다.
 
-이 분리는 공개 지식과 운영 메모가 뒤섞이는 것을 막는다.
+### Development — `<name>-dev` (Private)
+공개 저장소의 전체 이름 뒤에 `-dev`를 붙인다. 수집 원문은 `sources/`에 실제 저장하고 Git으로 추적한다.
+`data/source-archive.yaml`에 Source ID·공식 URL·보관 경로·수집 시각·SHA-256·버전을 기록한다.
+roadmap, backlog, research log, evidence gaps, QA/deployment record도 개발 저장소에 둔다.
+
+공개 사이트는 공개 저장소만 빌드한다. 개발 저장소 전체 복사나 Git 이력 병합을 금지한다.
+Cloud Storage는 비공개 보조 사본이며 개발 저장소 원문 보관을 대체하지 않는다.
+세부 규칙은 [원문 및 저장소 정책](source-policy.md)을 따른다.
 
 ## 4. Obsidian authoring layer
 

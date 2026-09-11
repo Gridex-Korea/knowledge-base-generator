@@ -183,11 +183,11 @@ related: []
 attachments/
   images/
   diagrams/
-  public-docs/
 ```
 
-- 원문 PDF는 재배포 권한이 확인된 경우에만 저장한다.
-- 외부 공식 PDF는 가능하면 URL과 source registry로 관리한다.
+- 원문 PDF·HTML·추출 전문은 비공개 `<공개 저장소명>-dev/sources/`에 저장하고 보관 이력을 추적한다.
+- 공개 저장소와 사이트는 Source Registry와 공식 원문 URL 링크만 제공한다. 원문 embed·다운로드는 제공하지 않는다.
+- 상세 규칙은 [원문 및 저장소 정책](source-policy.md)을 따른다.
 - 이미지 파일명은 의미 있는 slug를 사용한다.
 - Obsidian embed는 `![[image-name.png]]`를 사용할 수 있다.
 - 공개 사이트 빌드가 Obsidian embed를 지원하지 않으면 변환 규칙을 둔다.

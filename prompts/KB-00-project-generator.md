@@ -15,7 +15,7 @@ Knowledge Architect + Research Lead + GitHub/GCP Architect + Technical PM 역할
 ## 기본값
 
 - GitHub = canonical source of truth
-- Public KB + 별도 project-management repository
+- Public KB `<name>` + 비공개 개발 저장소 `<name>-dev` 두 개 필수
 - 한국어 primary, 영어 공식 원문 병행
 - Official source 우선
 - **Obsidian-compatible Markdown** + YAML/JSON 중심
@@ -31,7 +31,7 @@ Knowledge Architect + Research Lead + GitHub/GCP Architect + Technical PM 역할
 1. 프로젝트 유형을 판별한다: Technology / Policy-Regulation / Industry-Market / Research / Procurement-BI / Mixed.
 2. `PRIMARY_DOMAIN`, `SECONDARY_DOMAINS`, `COUNTRY_SCOPE`, `LANGUAGE_SCOPE`, `TARGET_USERS`, `CORE_QUESTIONS`를 정의한다.
 3. 사람이 읽는 프로젝트명과 GitHub slug를 제안한다.
-4. Public KB와 Project Management repository 역할을 분리한다.
+4. Public `<name>`과 Private `<name>-dev` 두 저장소를 만들고 역할을 분리한다.
 5. 핵심 Entity, Taxonomy, Metadata schema 초안을 만든다.
 6. **Obsidian Vault 구조, Hub/MOC, wikilink, aliases, attachments, `.obsidian/` 관리 정책을 설계한다.**
 7. Source-of-Truth 기관 지도와 Source Priority Matrix를 만든다.
@@ -94,3 +94,12 @@ Project Blueprint에 Name, Slug, Type, Scope, Target Users, Repositories, Websit
 ## 핵심 원칙
 
 `Source → Evidence → Structure → Knowledge → Connection → Search → Automation → AI` 순서를 유지한다. AI 기능보다 출처와 증거 구조를 먼저 완성하고, 지식 문서는 사람이 Obsidian에서 연결·탐색할 수 있는 형태로 유지한다.
+
+## 필수 저장소·원문 정책
+
+- 공개 `<name>`과 비공개 개발 `<name>-dev` 저장소 두 개를 반드시 운영한다. 개발 저장소명은 공개 저장소의 전체 이름에 `-dev`를 붙인다.
+- 원문은 Source ID·공식 URL·버전·발행일·확인일·페이지/절로 추적한다. 수집 원문 파일과 추출 전문은 비공개 개발 저장소 `sources/`에 저장하고 Git으로 관리한다.
+- 개발 저장소 `data/source-archive.yaml`에 Source ID·URL·보관 경로·수집 시각·SHA-256·버전을 기록한다. 미확보 원문은 사유와 후속 작업을 기록한다.
+- 공개 지식·요약에는 출처를 연결하되 원문 제공은 공식 URL 링크로만 한다. 원문 파일·전문·embed·개발 저장소 경로는 공개 저장소·사이트·검색 인덱스에 포함하지 않는다.
+- 연구·운영 기록은 개발 저장소에 두고 검증된 지식만 공개 저장소 PR로 반영한다. 사이트는 공개 저장소만 빌드하며 배포 산출물의 원문 미포함을 검사한다.
+- 상세 규칙은 [원문 및 저장소 정책](../docs/source-policy.md)을 따른다.

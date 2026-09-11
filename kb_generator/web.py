@@ -30,7 +30,7 @@ code{background:#8882;padding:2px 5px;border-radius:4px}
 </head>
 <body>
 <h1>Knowledge Base Generator</h1>
-<p>주제 한 줄로 Obsidian-compatible Knowledge Base를 생성합니다.</p>
+<p>주제 한 줄로 공개 Knowledge Base와 비공개 개발 저장소(-dev) 두 폴더를 생성합니다.</p>
 <form method="post" action="/generate">
 <label>주제 <input name="topic" required placeholder="예: 해상풍력, HVDC, 수소산업"></label>
 <label>프로젝트명 <input name="name" placeholder="비우면 자동 생성"></label>
@@ -41,7 +41,7 @@ code{background:#8882;padding:2px 5px;border-radius:4px}
 <label>언어 <input name="language" value="ko"></label>
 <button type="submit">Knowledge Base ZIP 생성</button>
 </form>
-<p><small>생성물에는 Obsidian Hub/MOC, schema, taxonomy, source registry, roadmap, evidence gaps, GCP manifest, GitHub Actions validator가 포함됩니다.</small></p>
+<p><small>공개 사이트는 원문 링크만 제공하며 원문 파일은 비공개 개발 저장소에 보관합니다. ZIP에는 두 저장소 폴더와 Obsidian Hub/MOC, schema, taxonomy, source registry, roadmap, evidence gaps, GCP manifest, GitHub Actions validator가 포함됩니다.</small></p>
 </body></html>"""
 
 
@@ -84,7 +84,7 @@ def zip_project(spec: ProjectSpec) -> bytes:
         generate(spec, root)
         buffer = io.BytesIO()
         with zipfile.ZipFile(buffer, "w", compression=zipfile.ZIP_DEFLATED) as zf:
-            for path in sorted(root.rglob("*")):
+            for path in sorted(Path(td).rglob("*")):
                 if path.is_file():
                     zf.write(path, path.relative_to(root.parent))
         return buffer.getvalue()
