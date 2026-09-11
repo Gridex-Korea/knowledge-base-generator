@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "knowledge-base-generator"
-version = "0.1.0"
+version = "0.3.0"
 description = "Generate verified, Obsidian-compatible knowledge bases with GitHub/GCP-ready scaffolding"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -13,7 +13,7 @@ authors = [{name = "Uptec-khj"}]
 dependencies = []
 
 [project.scripts]
-kbgen = "kb_generator.cli:main"
+kbgen = "kb_generator.router:main"
 kbgen-web = "kb_generator.web:main"
 
 [tool.setuptools]
