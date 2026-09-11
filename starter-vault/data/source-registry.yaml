@@ -1,0 +1,18 @@
+version: 1
+sources: []
+
+# Example
+# - id: SRC-0001
+#   title: Example Official Document
+#   organization: Example Organization
+#   country: KR
+#   source_type: official-report
+#   url: https://example.org/document
+#   publication_date: 2026-01-01
+#   version: '1.0'
+#   status: final
+#   official: true
+#   evidence_level: Confirmed
+#   collection_mode: Watch
+#   last_verified: 2026-09-11
+#   notes: ''
