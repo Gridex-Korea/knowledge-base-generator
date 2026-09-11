@@ -6,6 +6,51 @@ Knowledge Base Generator는 특정 분야의 자료를 단순히 모으는 도�
 
 전력정책, GFM, HVDC, 해상풍력, 수소, 배터리, AI, 공공조달 등 주제만 바꿔 동일한 구조를 재사용하는 것을 목표로 합니다.
 
+## CLI v0.1 — 한 줄로 시작하기
+
+```bash
+python -m kb_generator "해상풍력"
+```
+
+또는 editable install 후:
+
+```bash
+pip install -e .
+kbgen "해상풍력" --countries KR AU --site quartz --gcp-level 2
+```
+
+예를 들어 `해상풍력`을 입력하면 `offshore-wind` slug와 기술·정책·산업 혼합형 구조를 자동 추론하고 다음을 생성합니다.
+
+```text
+offshore-wind-knowledge-base/
+├─ README.md
+├─ HOME.md
+├─ project.yaml
+├─ content/
+├─ hubs/
+├─ templates/
+├─ schemas/
+├─ taxonomy/
+├─ data/source-registry.yaml
+├─ project/
+│  ├─ roadmap.md
+│  └─ evidence-gaps.md
+├─ gcp/
+│  ├─ README.md
+│  └─ config.yaml
+├─ scripts/validate_kb.py
+├─ .github/workflows/validate.yml
+└─ generator-manifest.json
+```
+
+생성 직후에는 다음 검증을 실행할 수 있습니다.
+
+```bash
+python offshore-wind-knowledge-base/scripts/validate_kb.py offshore-wind-knowledge-base
+```
+
+자세한 사용법은 [CLI guide](docs/cli.md)를 참고하세요.
+
 ## Design principles
 
 1. **GitHub is canonical** — Markdown/YAML/JSON과 변경 이력의 최종 원본은 GitHub에 둡니다.
@@ -59,29 +104,15 @@ Official web / PDF / papers / APIs / datasets
 
 ```text
 knowledge-base-generator/
-├─ README.md
-├─ prompts/
-│  ├─ KB-00-project-generator.md
-│  ├─ KB-01-initial-build.md
-│  ├─ KB-02-expand.md
-│  ├─ KB-03-update-and-verify.md
-│  ├─ KB-04-country-domain-expansion.md
-│  ├─ KB-05-source-hunter.md
-│  ├─ KB-06-evidence-auditor.md
-│  └─ KB-07-github-gcp-deployment.md
+├─ kb_generator/        # executable CLI
+├─ tests/               # generator smoke/unit tests
+├─ prompts/             # KB-00 ~ KB-07
 ├─ docs/
 │  ├─ architecture.md
 │  ├─ obsidian-conventions.md
-│  └─ reference-projects.md
-└─ starter-vault/
-   ├─ HOME.md
-   ├─ content/
-   ├─ hubs/
-   ├─ attachments/
-   ├─ templates/
-   ├─ schemas/
-   ├─ taxonomy/
-   └─ data/
+│  ├─ reference-projects.md
+│  └─ cli.md
+└─ starter-vault/       # reusable reference Vault
 ```
 
 ## Obsidian-first, not Obsidian-only
@@ -102,24 +133,43 @@ knowledge-base-generator/
 
 ## GCP maturity levels
 
+### Level 0 — Local / GitHub only
+Obsidian + GitHub 중심으로 시작합니다.
+
 ### Level 1 — Minimal
-GitHub Actions + Cloud Storage + Cloud Scheduler + Cloud Run
+Cloud Storage + Cloud Scheduler + Cloud Run + Secret Manager
 
 ### Level 2 — Automated Research
-Level 1 + Pub/Sub + BigQuery/Firestore + Secret Manager + change detection
+Level 1 + Pub/Sub + BigQuery/Firestore + change detection
 
 ### Level 3 — AI Knowledge Platform
 Level 2 + Vertex AI + embeddings + Vector Search/RAG Engine + evaluation
 
 GCP의 데이터베이스와 인덱스는 **파생 계층**입니다. 삭제되어도 GitHub canonical knowledge로 재생성할 수 있어야 합니다.
 
-## Quick start
+## Current CLI features
 
-1. `starter-vault/`를 새 Knowledge Base의 초기 구조로 사용합니다.
-2. 프로젝트 아이디어가 한 문장뿐이면 `prompts/KB-00-project-generator.md`부터 실행합니다.
-3. 새 프로젝트라면 KB-01, 기존 프로젝트라면 KB-02/03/04를 선택합니다.
-4. Source가 부족하면 KB-05, 근거 품질을 감사하려면 KB-06을 사용합니다.
-5. 자동화·GCP·RAG 단계에서 KB-07을 사용합니다.
+- 한 줄 주제 입력
+- 자주 쓰는 한국어/영문 도메인 slug 자동 추론
+- Knowledge Base 유형 자동 추론
+- Obsidian Hub/MOC와 초기 Note 생성
+- Schema / Taxonomy / Source Registry 생성
+- Roadmap / Evidence Gap 생성
+- GCP level별 설정 초안 생성
+- GitHub Actions validation workflow 생성
+- Frontmatter / duplicate ID / broken wikilink 검사
+- 사용자 정의 Starter Vault 지원
+
+## Roadmap
+
+다음 단계에서는 다음을 확장할 예정입니다.
+
+- GitHub repository 생성 및 초기 push 자동화
+- Quartz/MkDocs 실제 사이트 scaffold
+- GCP Terraform 생성
+- `kbgen research` — Source Hunter 실행 구조
+- `kbgen audit` — Evidence Auditor 자동화
+- Web UI
 
 ## Reference implementation
 
@@ -127,4 +177,4 @@ GRIDEX Power Policy Knowledge Base와 HVDC Knowledge Base 같은 실제 KB 프�
 
 ## Status
 
-v1 — Prompt framework + evidence architecture + Obsidian conventions + GitHub/GCP reference architecture + starter vault.
+**v0.1 CLI** — one-line project generation + Obsidian scaffold + GitHub validation + GCP configuration manifest.
