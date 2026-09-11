@@ -8,7 +8,7 @@
 python -m kb_generator "해상풍력"
 ```
 
-기본 출력은 `./offshore-wind-knowledge-base`입니다.
+기본 출력은 공개용 `./offshore-wind-knowledge-base`와 비공개 개발용 `./offshore-wind-knowledge-base-dev`입니다.
 
 설치 후에는 다음처럼 사용할 수 있습니다.
 
@@ -39,13 +39,20 @@ templates/
 schemas/
 taxonomy/
 data/source-registry.yaml
+scripts/validate_kb.py
+.github/workflows/validate.yml
+generator-manifest.json
+```
+
+형제 개발 폴더 `<출력 폴더명>-dev/`:
+
+```text
+sources/
+data/source-archive.yaml
 project/roadmap.md
 project/evidence-gaps.md
 gcp/config.yaml
 gcp/README.md
-scripts/validate_kb.py
-.github/workflows/validate.yml
-generator-manifest.json
 ```
 
 ## Automatic inference
@@ -74,7 +81,7 @@ v0.1은 일부 자주 쓰는 에너지·전력 주제를 자동 인식합니다.
 --countries        국가 코드 목록
 --site             quartz / mkdocs / docusaurus / none
 --gcp-level        0 / 1 / 2 / 3
---private          비공개 프로젝트 표시
+--private          지원 종료: 공개 저장소와 비공개 -dev 저장소를 항상 함께 생성
 --template-root    사용자 정의 Starter Vault 사용
 --force            비어 있지 않은 폴더에 병합
 --json             생성 결과를 JSON으로 출력
@@ -124,3 +131,13 @@ Generator가 프로젝트 설정, roadmap, GCP 설정, validator 등 제어 파�
 - Quartz/MkDocs 실제 사이트 scaffold 생성
 - GCP Terraform 생성
 - Web UI
+
+## 공개/개발 저장소와 원문
+
+모든 프로젝트는 공개 `<name>`과 비공개 `<name>-dev` 두 저장소를 사용합니다.
+CLI는 출력 폴더 옆에 `-dev` 폴더를 함께 생성하며 Web ZIP도 두 폴더를 포함합니다.
+`project/`의 연구계획·결과·감사·roadmap·evidence gaps와 `gcp/`는 개발 폴더에 생성됩니다.
+`data/source-candidates.json`도 개발 폴더에 저장하고 검증된 출처만 공개 `data/source-registry.yaml`에 등록합니다.
+원문 파일·추출 전문은 개발 저장소 `sources/`에 저장하고 `data/source-archive.yaml`로 보관 이력을 추적합니다.
+공개 사이트의 원문 제공은 공식 URL 링크만 허용합니다. 원문이나 개발 폴더 전체를 사이트에 배포하지 않습니다.
+`kbgen github <공개 폴더> --execute`는 두 저장소를 Public/Private로 각각 생성·push합니다.

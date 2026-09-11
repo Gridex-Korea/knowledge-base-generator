@@ -4,6 +4,10 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
+from subprocess import CompletedProcess
+
+from kb_generator.repositories import development_root
 
 from kb_generator.cli import ProjectSpec, generate
 from kb_generator.ops import (
@@ -11,6 +15,8 @@ from kb_generator.ops import (
     doctor,
     extract_grounding,
     github_bootstrap_plan,
+    execute_github_bootstrap,
+    _existing_origin,
     load_project,
     write_research_plan,
 )
@@ -42,6 +48,8 @@ class OperationsTest(unittest.TestCase):
             self.assertEqual(project["topic"], "해상풍력")
             self.assertEqual(project["countries"], ["KR", "AU"])
             plan = write_research_plan(root)
+            self.assertEqual(plan.parent, development_root(root) / "project")
+            self.assertFalse((root / "project").exists())
             text = plan.read_text(encoding="utf-8")
             self.assertIn("Source-of-Truth map", text)
             self.assertIn("해상풍력", text)
@@ -85,6 +93,12 @@ class OperationsTest(unittest.TestCase):
             self.assertEqual(plan["target"], "Uptec-khj/offshore-wind-knowledge-base")
             self.assertTrue(any("gh repo create" in command for command in plan["commands"]))
             self.assertFalse(plan["private"])
+            self.assertEqual([(r["target"], r["private"]) for r in plan["repositories"]], [
+                ("Uptec-khj/offshore-wind-knowledge-base-dev", True),
+                ("Uptec-khj/offshore-wind-knowledge-base", False),
+            ])
+            with self.assertRaises(RuntimeError):
+                github_bootstrap_plan(root, private=True)
 
     def test_router_backward_compatibility_and_commands(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -95,6 +109,51 @@ class OperationsTest(unittest.TestCase):
             self.assertEqual(router_main(["research", str(output)]), 0)
             self.assertEqual(router_main(["audit", str(output)]), 0)
             self.assertEqual(router_main(["doctor", str(output)]), 0)
+
+    def test_execute_creates_two_repositories_with_required_visibility(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = self.make_kb(Path(tmp))
+            def run(args, **kwargs):
+                code = 1 if args[1:4] == ["diff", "--cached", "--quiet"] else 0
+                return CompletedProcess(args, code, "", "")
+            with patch("kb_generator.ops.shutil.which", return_value="available"), patch("kb_generator.ops.subprocess.run", side_effect=run) as mocked:
+                execute_github_bootstrap(root, owner="Uptec-khj")
+            creates = [call for call in mocked.call_args_list if call.args[0][:3] == ["gh", "repo", "create"]]
+            self.assertEqual(len(creates), 2)
+            self.assertIn("--private", creates[0].args[0])
+            self.assertTrue(creates[0].args[0][3].endswith("-dev"))
+            self.assertEqual(creates[0].kwargs["cwd"], development_root(root))
+            self.assertIn("--public", creates[1].args[0])
+            self.assertEqual(creates[1].kwargs["cwd"], root)
+
+    def test_public_source_directory_blocks_all_pushes(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = self.make_kb(Path(tmp))
+            (root / "sources").mkdir()
+            with patch("kb_generator.ops.shutil.which", return_value="available"), patch("kb_generator.ops.subprocess.run") as mocked:
+                with self.assertRaises(RuntimeError):
+                    execute_github_bootstrap(root, owner="Uptec-khj")
+                mocked.assert_not_called()
+
+    def test_existing_development_origin_must_be_private(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / ".git").mkdir()
+            target = "Uptec-khj/kb-dev"
+            responses = [CompletedProcess([], 0, f"https://github.com/{target}.git\n", ""),
+                         CompletedProcess([], 0, f"https://github.com/{target}.git\n", ""),
+                         CompletedProcess([], 0, json.dumps({"nameWithOwner": target, "isPrivate": False}), "")]
+            with patch("kb_generator.ops.subprocess.run", side_effect=responses):
+                with self.assertRaisesRegex(RuntimeError, "visibility mismatch"):
+                    _existing_origin(root, target, True)
+
+    def test_doctor_reports_missing_development_repository(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = self.make_kb(Path(tmp))
+            (development_root(root) / "repository.json").unlink()
+            self.assertEqual(doctor(root)["status"], "needs-attention")
+            with self.assertRaises(RuntimeError):
+                github_bootstrap_plan(root)
 
 
 if __name__ == "__main__":

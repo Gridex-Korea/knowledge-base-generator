@@ -6,6 +6,15 @@ Knowledge Base Generator는 특정 분야의 자료를 단순히 모으는 도�
 
 전력정책, GFM, HVDC, 해상풍력, 수소, 배터리, AI, 공공조달 등 주제만 바꿔 동일한 구조를 재사용하는 것을 목표로 합니다.
 
+## 원문 보관과 저장소 규칙
+
+모든 생성 프로젝트는 **공개 저장소 `<name>` + 비공개 개발 저장소 `<name>-dev` 두 개**를 반드시 사용합니다.
+원문은 출처·버전·확인일로 추적하고 **원문 파일·추출 전문은 비공개 개발 저장소에 저장**합니다.
+공개 저장소와 사이트에는 검증된 지식·요약과 출처 메타데이터를 게시하며 **원문은 공식 URL 링크로만 제공**합니다.
+
+예: `offshore-wind-knowledge-base`(Public), `offshore-wind-knowledge-base-dev`(Private).
+세부 운영·보관 이력·전환 방법은 [원문 및 저장소 정책](docs/source-policy.md)을 따릅니다.
+
 ## CLI — 한 줄로 시작하기
 
 ```bash
@@ -32,15 +41,15 @@ offshore-wind-knowledge-base/
 ├─ schemas/
 ├─ taxonomy/
 ├─ data/source-registry.yaml
-├─ project/
-│  ├─ roadmap.md
-│  └─ evidence-gaps.md
-├─ gcp/
-│  ├─ README.md
-│  └─ config.yaml
 ├─ scripts/validate_kb.py
 ├─ .github/workflows/validate.yml
 └─ generator-manifest.json
+
+offshore-wind-knowledge-base-dev/  # 비공개 개발 저장소
+├─ sources/
+├─ data/source-archive.yaml
+├─ project/                       # roadmap, evidence gaps, research
+└─ gcp/
 ```
 
 생성 직후에는 다음 검증을 실행할 수 있습니다.
@@ -188,7 +197,7 @@ GCP의 데이터베이스와 인덱스는 **파생 계층**입니다. 삭제되�
 
 다음 단계에서는 다음을 확장할 예정입니다.
 
-- GitHub repository 생성 및 초기 push 자동화
+- 공개/비공개 저장소 생성과 초기 push (`kbgen github --execute`)
 - Quartz/MkDocs 실제 사이트 scaffold
 - GCP Terraform 생성
 - `kbgen research` — Source Hunter 실행 구조

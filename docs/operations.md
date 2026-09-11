@@ -37,7 +37,7 @@ kbgen research ./offshore-wind-knowledge-base
 결과:
 
 ```text
-project/research-plan.md
+../offshore-wind-knowledge-base-dev/project/research-plan.md
 ```
 
 ## 3. Grounded source discovery with Vertex AI
@@ -66,9 +66,9 @@ export GOOGLE_OAUTH_ACCESS_TOKEN=...
 출력:
 
 ```text
-project/research-plan.md
-project/research-results.md
-data/source-candidates.json
+../offshore-wind-knowledge-base-dev/project/research-plan.md
+../offshore-wind-knowledge-base-dev/project/research-results.md
+../offshore-wind-knowledge-base-dev/data/source-candidates.json
 ```
 
 Google Search grounding이 돌려준 URL은 **Candidate Source**로만 저장됩니다. 공식기관·원문·버전·시행상태를 검증하기 전에는 `Confirmed`로 승격하지 않습니다.
@@ -87,7 +87,7 @@ kbgen audit ./offshore-wind-knowledge-base
 - `last_verified`가 없는 note
 - frontmatter 누락
 
-결과는 기본적으로 `project/evidence-audit.md`에 저장합니다.
+결과는 기본적으로 형제 개발 폴더의 `project/evidence-audit.md`에 저장합니다.
 
 ## 5. Doctor
 
@@ -136,3 +136,13 @@ GitHub PR / merge
    ↓
 정기 research + audit
 ```
+
+## 공개/개발 저장소와 원문
+
+모든 프로젝트는 공개 `<name>`과 비공개 `<name>-dev` 두 저장소를 사용합니다.
+CLI는 출력 폴더 옆에 `-dev` 폴더를 함께 생성하며 Web ZIP도 두 폴더를 포함합니다.
+`project/`의 연구계획·결과·감사·roadmap·evidence gaps와 `gcp/`는 개발 폴더에 생성됩니다.
+`data/source-candidates.json`도 개발 폴더에 저장하고 검증된 출처만 공개 `data/source-registry.yaml`에 등록합니다.
+원문 파일·추출 전문은 개발 저장소 `sources/`에 저장하고 `data/source-archive.yaml`로 보관 이력을 추적합니다.
+공개 사이트의 원문 제공은 공식 URL 링크만 허용합니다. 원문이나 개발 폴더 전체를 사이트에 배포하지 않습니다.
+`kbgen github <공개 폴더> --execute`는 두 저장소를 Public/Private로 각각 생성·push합니다.

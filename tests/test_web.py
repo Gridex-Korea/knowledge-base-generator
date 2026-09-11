@@ -28,6 +28,13 @@ class WebGeneratorTests(unittest.TestCase):
         with zipfile.ZipFile(io.BytesIO(payload)) as zf:
             names = set(zf.namelist())
         prefix = "hvdc-knowledge-base/"
+        dev_prefix = "hvdc-knowledge-base-dev/"
+        self.assertEqual({name.split("/")[0] for name in names}, {"hvdc-knowledge-base", "hvdc-knowledge-base-dev"})
+        self.assertIn(dev_prefix + "sources/README.md", names)
+        self.assertIn(dev_prefix + "data/source-archive.yaml", names)
+        self.assertIn(dev_prefix + "project/roadmap.md", names)
+        self.assertNotIn(prefix + "project/roadmap.md", names)
+        self.assertNotIn(prefix + "data/source-archive.yaml", names)
         self.assertIn(prefix + "HOME.md", names)
         self.assertIn(prefix + "project.yaml", names)
         self.assertIn(prefix + "scripts/validate_kb.py", names)
