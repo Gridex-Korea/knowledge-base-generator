@@ -6,7 +6,7 @@ Knowledge Base Generator는 특정 분야의 자료를 단순히 모으는 도�
 
 전력정책, GFM, HVDC, 해상풍력, 수소, 배터리, AI, 공공조달 등 주제만 바꿔 동일한 구조를 재사용하는 것을 목표로 합니다.
 
-## CLI v0.1 — 한 줄로 시작하기
+## CLI — 한 줄로 시작하기
 
 ```bash
 python -m kb_generator "해상풍력"
@@ -50,6 +50,26 @@ python offshore-wind-knowledge-base/scripts/validate_kb.py offshore-wind-knowled
 ```
 
 자세한 사용법은 [CLI guide](docs/cli.md)를 참고하세요.
+
+## Web Generator
+
+같은 생성 엔진을 웹 UI에서도 사용할 수 있습니다.
+
+```bash
+pip install -e .
+kbgen-web --host 127.0.0.1 --port 8080
+```
+
+브라우저에서 `http://127.0.0.1:8080`을 열고 주제·국가·사이트 엔진·GCP Level을 선택하면 완성된 Knowledge Base ZIP을 생성합니다.
+
+Docker/Cloud Run 배포도 지원합니다.
+
+```bash
+docker build -t knowledge-base-generator .
+docker run --rm -p 8080:8080 knowledge-base-generator
+```
+
+자세한 내용은 [Web Generator guide](docs/web.md)를 참고하세요.
 
 ## Design principles
 
@@ -104,14 +124,16 @@ Official web / PDF / papers / APIs / datasets
 
 ```text
 knowledge-base-generator/
-├─ kb_generator/        # executable CLI
+├─ kb_generator/        # CLI + Web generator core
 ├─ tests/               # generator smoke/unit tests
 ├─ prompts/             # KB-00 ~ KB-07
 ├─ docs/
 │  ├─ architecture.md
 │  ├─ obsidian-conventions.md
 │  ├─ reference-projects.md
-│  └─ cli.md
+│  ├─ cli.md
+│  └─ web.md
+├─ Dockerfile           # Cloud Run-ready web container
 └─ starter-vault/       # reusable reference Vault
 ```
 
@@ -147,7 +169,7 @@ Level 2 + Vertex AI + embeddings + Vector Search/RAG Engine + evaluation
 
 GCP의 데이터베이스와 인덱스는 **파생 계층**입니다. 삭제되어도 GitHub canonical knowledge로 재생성할 수 있어야 합니다.
 
-## Current CLI features
+## Current generator features
 
 - 한 줄 주제 입력
 - 자주 쓰는 한국어/영문 도메인 slug 자동 추론
@@ -159,6 +181,8 @@ GCP의 데이터베이스와 인덱스는 **파생 계층**입니다. 삭제되�
 - GitHub Actions validation workflow 생성
 - Frontmatter / duplicate ID / broken wikilink 검사
 - 사용자 정의 Starter Vault 지원
+- 웹 폼 기반 ZIP export
+- Docker / Cloud Run-ready 웹 실행
 
 ## Roadmap
 
@@ -169,7 +193,7 @@ GCP의 데이터베이스와 인덱스는 **파생 계층**입니다. 삭제되�
 - GCP Terraform 생성
 - `kbgen research` — Source Hunter 실행 구조
 - `kbgen audit` — Evidence Auditor 자동화
-- Web UI
+- Project Blueprint / file tree 웹 미리보기
 
 ## Reference implementation
 
@@ -177,4 +201,4 @@ GRIDEX Power Policy Knowledge Base와 HVDC Knowledge Base 같은 실제 KB 프�
 
 ## Status
 
-**v0.1 CLI** — one-line project generation + Obsidian scaffold + GitHub validation + GCP configuration manifest.
+**v0.2 preview** — one-line CLI + web ZIP generator + Obsidian scaffold + GitHub validation + GCP configuration manifest.

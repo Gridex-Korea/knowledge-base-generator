@@ -16,3 +16,5 @@ jobs:
       - run: python -m unittest discover -s tests -v
       - run: python -m kb_generator '해상풍력' -o /tmp/offshore-wind-kb --countries KR AU --gcp-level 2
       - run: python /tmp/offshore-wind-kb/scripts/validate_kb.py /tmp/offshore-wind-kb
+      - run: python -m kb_generator.web --help
+      - run: docker build -t knowledge-base-generator:test .
